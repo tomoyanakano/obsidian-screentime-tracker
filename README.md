@@ -4,6 +4,13 @@ Track your macOS Screen Time usage directly inside Obsidian. This plugin reads t
 
 > **macOS only** — This plugin uses macOS-specific APIs (`knowledgeC.db`, `mdfind`, `mdls`) and does not work on Windows or Linux.
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/timeline-view.png" alt="Timeline View" width="300" />
+  <img src="screenshots/daily-note-table.png" alt="Daily Note Table" width="300" />
+</p>
+
 ## Features
 
 - **Timeline View** — Visual timeline of app usage with zoom and day navigation
