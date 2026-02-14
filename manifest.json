@@ -3,7 +3,7 @@
 	"name": "Screen Time Tracker",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Track macOS Screen Time data from knowledgeC.db and insert into daily notes for plan vs actual review.",
+	"description": "Track macOS Screen Time data from knowledgeC.db and insert into daily notes.",
 	"author": "tomoyanakano",
 	"authorUrl": "https://github.com/tomoyanakano",
 	"isDesktopOnly": true
