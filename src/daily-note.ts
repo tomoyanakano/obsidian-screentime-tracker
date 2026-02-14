@@ -12,8 +12,8 @@ function generateMarkdownTable(summary: DailySummary): string {
 	const lines: string[] = [];
 	lines.push("## Screen Time");
 	lines.push("");
-	lines.push("| 時間 | アプリ | 使用時間 |");
-	lines.push("|------|--------|---------|");
+	lines.push("| Hour | App | Duration |");
+	lines.push("|------|-----|----------|");
 
 	for (const hourData of summary.hourly) {
 		for (const app of hourData.apps) {
@@ -21,7 +21,7 @@ function generateMarkdownTable(summary: DailySummary): string {
 		}
 	}
 
-	lines.push(`| **合計** | - | **${formatMinutes(summary.totalMinutes)}** |`);
+	lines.push(`| **Total** | - | **${formatMinutes(summary.totalMinutes)}** |`);
 	lines.push("");
 	return lines.join("\n");
 }
