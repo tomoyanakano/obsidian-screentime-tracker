@@ -1,36 +1,68 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
-import MyPlugin from "./main";
+import { App, PluginSettingTab, Setting } from "obsidian";
+import type ScreenTimeTrackerPlugin from "./main";
+import { DEFAULT_SETTINGS } from "./types";
 
-export interface MyPluginSettings {
-	mySetting: string;
-}
+export class ScreenTimeSettingTab extends PluginSettingTab {
+	plugin: ScreenTimeTrackerPlugin;
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
-
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: ScreenTimeTrackerPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		const {containerEl} = this;
-
+		const { containerEl } = this;
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+			.setName("Daily note folder")
+			.setDesc("Path to the daily notes folder (e.g., life/daily)")
+			.addText((text) =>
+				text
+					.setPlaceholder(DEFAULT_SETTINGS.dailyNoteFolder)
+					.setValue(this.plugin.settings.dailyNoteFolder)
+					.onChange(async (value) => {
+						this.plugin.settings = {
+							...this.plugin.settings,
+							dailyNoteFolder: value,
+						};
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Minimum duration (seconds)")
+			.setDesc("Ignore app usage entries shorter than this duration.")
+			.addText((text) =>
+				text
+					.setPlaceholder(String(DEFAULT_SETTINGS.minimumDurationSeconds))
+					.setValue(String(this.plugin.settings.minimumDurationSeconds))
+					.onChange(async (value) => {
+						const parsed = parseInt(value, 10);
+						if (!isNaN(parsed) && parsed >= 0) {
+							this.plugin.settings = {
+								...this.plugin.settings,
+								minimumDurationSeconds: parsed,
+							};
+							await this.plugin.saveSettings();
+						}
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("knowledgeC.db path")
+			.setDesc("Leave empty for default macOS path (~/Library/Application Support/Knowledge/knowledgeC.db).")
+			.addText((text) =>
+				text
+					.setPlaceholder("(default)")
+					.setValue(this.plugin.settings.dbPath)
+					.onChange(async (value) => {
+						this.plugin.settings = {
+							...this.plugin.settings,
+							dbPath: value,
+						};
+						await this.plugin.saveSettings();
+					})
+			);
 	}
 }

@@ -1,99 +1,158 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { Notice, Plugin } from "obsidian";
+import { queryScreenTime } from "./screentime-db";
+import { resolveAppName } from "./app-resolver";
+import { insertScreenTimeSection } from "./daily-note";
+import { ScreenTimeSettingTab } from "./settings";
+import { ScreenTimeView, VIEW_TYPE_SCREENTIME } from "./timeline-view";
+import {
+	ScreenTimeSettings,
+	DEFAULT_SETTINGS,
+	ScreenTimeEntry,
+	HourlySummary,
+	DailySummary,
+} from "./types";
 
-// Remember to rename these classes and interfaces!
+function formatDate(date: Date): string {
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, "0");
+	const d = String(date.getDate()).padStart(2, "0");
+	return `${y}-${m}-${d}`;
+}
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+function groupByHour(
+	entries: ReadonlyArray<ScreenTimeEntry>,
+	minimumDurationSeconds: number
+): ReadonlyArray<HourlySummary> {
+	const hourAppMap = new Map<string, Map<string, number>>();
+
+	for (const entry of entries) {
+		if (entry.durationSeconds < minimumDurationSeconds) continue;
+
+		const hour = entry.startTime.slice(0, 2) + ":00";
+		if (!hourAppMap.has(hour)) {
+			hourAppMap.set(hour, new Map<string, number>());
+		}
+		const appMap = hourAppMap.get(hour)!;
+		const current = appMap.get(entry.bundleId) ?? 0;
+		appMap.set(entry.bundleId, current + entry.durationSeconds);
+	}
+
+	const hours = Array.from(hourAppMap.keys()).sort();
+	return hours.map((hour) => {
+		const appMap = hourAppMap.get(hour)!;
+		const apps = Array.from(appMap.entries())
+			.map(([bundleId, seconds]) => ({
+				name: resolveAppName(bundleId),
+				minutes: Math.round(seconds / 60),
+			}))
+			.filter((a) => a.minutes > 0)
+			.sort((a, b) => b.minutes - a.minutes);
+		return { hour, apps };
+	});
+}
+
+function buildDailySummary(
+	date: string,
+	hourlyData: ReadonlyArray<HourlySummary>
+): DailySummary {
+	const totalMinutes = hourlyData.reduce(
+		(sum, h) => sum + h.apps.reduce((s, a) => s + a.minutes, 0),
+		0
+	);
+	return { date, hourly: hourlyData, totalMinutes };
+}
+
+export default class ScreenTimeTrackerPlugin extends Plugin {
+	settings: ScreenTimeSettings = DEFAULT_SETTINGS;
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		this.registerView(
+			VIEW_TYPE_SCREENTIME,
+			(leaf) => new ScreenTimeView(leaf, this.settings)
+		);
+
+		this.addCommand({
+			id: "open-screentime-view",
+			name: "Open Screen Time Timeline",
+			callback: () => this.activateView(),
 		});
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
+			id: "insert-screen-time-today",
+			name: "Insert Screen Time (today)",
+			callback: () => this.insertForDate(new Date()),
+		});
+
+		this.addCommand({
+			id: "insert-screen-time-yesterday",
+			name: "Insert Screen Time (yesterday)",
 			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			}
+				const yesterday = new Date();
+				yesterday.setDate(yesterday.getDate() - 1);
+				this.insertForDate(yesterday);
+			},
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
+		this.addSettingTab(new ScreenTimeSettingTab(this.app, this));
 	}
 
-	onunload() {
+	async onunload() {
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_SCREENTIME);
+	}
+
+	private async activateView() {
+		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_SCREENTIME);
+		if (existing.length > 0) {
+			this.app.workspace.revealLeaf(existing[0]!);
+			return;
+		}
+
+		const leaf = this.app.workspace.getRightLeaf(false);
+		if (leaf) {
+			await leaf.setViewState({
+				type: VIEW_TYPE_SCREENTIME,
+				active: true,
+			});
+			this.app.workspace.revealLeaf(leaf);
+		}
+	}
+
+	private async insertForDate(date: Date) {
+		const dateStr = formatDate(date);
+		try {
+			new Notice(`Fetching Screen Time for ${dateStr}...`);
+
+			const entries = queryScreenTime(
+				dateStr,
+				this.settings.dbPath || undefined
+			);
+
+			if (entries.length === 0) {
+				new Notice(`No Screen Time data found for ${dateStr}`);
+				return;
+			}
+
+			const hourly = groupByHour(entries, this.settings.minimumDurationSeconds);
+			const summary = buildDailySummary(dateStr, hourly);
+
+			await insertScreenTimeSection(this.app, summary, this.settings);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			new Notice(`Screen Time error: ${message}`);
+		}
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			await this.loadData() as Partial<ScreenTimeSettings>
+		);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
 	}
 }

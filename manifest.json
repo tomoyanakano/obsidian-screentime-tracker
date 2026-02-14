@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "screentime-tracker",
+	"name": "Screen Time Tracker",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+	"description": "Track macOS Screen Time data from knowledgeC.db and insert into daily notes for plan vs actual review.",
+	"author": "tomoyanakano",
+	"authorUrl": "https://github.com/tomoyanakano",
+	"isDesktopOnly": true
 }
