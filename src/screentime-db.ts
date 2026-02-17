@@ -1,12 +1,12 @@
 import { execSync } from "child_process";
 import { writeFileSync, unlinkSync } from "fs";
+import { homedir } from "os";
 import { ScreenTimeEntry } from "./types";
 
 const CORE_DATA_EPOCH = 978307200; // 2001-01-01 00:00:00 UTC in Unix timestamp
 
 function getDefaultDbPath(): string {
-	const home = process.env.HOME ?? "";
-	return `${home}/Library/Application Support/Knowledge/knowledgeC.db`;
+	return `${homedir()}/Library/Application Support/Knowledge/knowledgeC.db`;
 }
 
 export function queryScreenTime(

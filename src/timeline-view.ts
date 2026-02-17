@@ -5,7 +5,7 @@ import { ScreenTimeEntry, ScreenTimeSettings } from "./types";
 
 export const VIEW_TYPE_SCREENTIME = "screentime-timeline-view";
 
-const HOUR_START = 6;
+const HOUR_START = 0;
 const HOUR_END = 24;
 const ZOOM_MIN = 40;
 const ZOOM_MAX = 240;
@@ -85,7 +85,7 @@ export class ScreenTimeView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Screen Time";
+		return "Screen time";
 	}
 
 	getIcon(): string {

@@ -50,7 +50,7 @@ export class ScreenTimeSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("knowledgeC.db path")
+			.setName("Database path")
 			.setDesc("Leave empty for default macOS path (~/Library/Application Support/Knowledge/knowledgeC.db).")
 			.addText((text) =>
 				text

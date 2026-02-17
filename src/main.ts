@@ -75,37 +75,37 @@ export default class ScreenTimeTrackerPlugin extends Plugin {
 
 		this.addCommand({
 			id: "open-screentime-view",
-			name: "Open Screen Time Timeline",
+			name: "Open screen time timeline",
 			callback: () => this.activateView(),
 		});
 
 		this.addCommand({
 			id: "insert-screen-time-today",
-			name: "Insert Screen Time (today)",
+			name: "Insert screen time (today)",
 			callback: () => this.insertForDate(new Date()),
 		});
 
 		this.addCommand({
 			id: "insert-screen-time-yesterday",
-			name: "Insert Screen Time (yesterday)",
+			name: "Insert screen time (yesterday)",
 			callback: () => {
 				const yesterday = new Date();
 				yesterday.setDate(yesterday.getDate() - 1);
-				this.insertForDate(yesterday);
+				void this.insertForDate(yesterday);
 			},
 		});
 
 		this.addSettingTab(new ScreenTimeSettingTab(this.app, this));
 	}
 
-	async onunload() {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_SCREENTIME);
+	onunload() {
+		// Do not detach leaves — Obsidian restores leaf positions on reload
 	}
 
 	private async activateView() {
 		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_SCREENTIME);
 		if (existing.length > 0) {
-			this.app.workspace.revealLeaf(existing[0]!);
+			await this.app.workspace.revealLeaf(existing[0]!);
 			return;
 		}
 
@@ -115,7 +115,7 @@ export default class ScreenTimeTrackerPlugin extends Plugin {
 				type: VIEW_TYPE_SCREENTIME,
 				active: true,
 			});
-			this.app.workspace.revealLeaf(leaf);
+			await this.app.workspace.revealLeaf(leaf);
 		}
 	}
 
