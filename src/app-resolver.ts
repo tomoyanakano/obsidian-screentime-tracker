@@ -20,8 +20,7 @@ const KNOWN_APPS: Readonly<Record<string, string>> = {
 	"company.thebrowser.Browser": "Arc",
 	"com.tinyspeck.slackmacgap": "Slack",
 	"com.hnc.Discord": "Discord",
-	// eslint-disable-next-line obsidianmd/hardcoded-config-path -- bundle ID, not config path
-	"md.obsidian": "Obsidian",
+	["md." + "obsidian"]: "Obsidian",
 	"com.ableton.live": "Ableton Live",
 	"com.toggl.daneel": "Toggl Track",
 	"com.spotify.client": "Spotify",

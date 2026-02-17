@@ -92,16 +92,18 @@ export class ScreenTimeView extends ItemView {
 		return "clock";
 	}
 
-	async onOpen() {
+	onOpen(): Promise<void> {
 		const container = this.contentEl;
 		container.empty();
 		container.addClass("screentime-view");
 		this.containerEl_ = container;
 		this.render();
+		return Promise.resolve();
 	}
 
-	async onClose() {
+	onClose(): Promise<void> {
 		this.containerEl_ = null;
+		return Promise.resolve();
 	}
 
 	updateSettings(settings: ScreenTimeSettings) {
